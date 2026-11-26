@@ -93,4 +93,4 @@ Este projeto foi desenvolvido como parte dos requisitos da disciplina de Program
 *   Desenvolvimento Orientado a Objetos.
 
 ---
-Desenvolvido por Henrique R. A.
+Desenvolvido por Henrique A. C.
