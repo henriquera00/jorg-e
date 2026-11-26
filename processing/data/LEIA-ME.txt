@@ -1,0 +1,18 @@
+==================================================
+ INSTRUÇÕES PARA O MODELO DE INTELIGÊNCIA ARTIFICIAL
+==================================================
+
+Esta pasta precisa conter o arquivo do modelo Whisper para que a 
+interface do Processing funcione. 
+
+Devido ao tamanho do arquivo (aprox. 460 MB), ele não foi incluído 
+neste repositório do GitHub.
+
+Para baixar o arquivo correto:
+1. Acesse o link: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin
+2. Salve o arquivo com o nome exato: ggml-small-q5_1.bin
+3. Coloque o arquivo dentro desta pasta "data".
+
+Certifique-se de que a pasta "code" também contenha a biblioteca 
+Java (whisper-jni.jar) para que o Processing reconheça a IA.
+==================================================
