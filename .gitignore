@@ -1,0 +1,9 @@
+# Ignorar modelo da IA (muito grande)
+*.bin
+data/
+
+# Ignorar arquivos temporários do Processing e do sistema
+build/
+*.class
+.DS_Store
+Thumbs.db
