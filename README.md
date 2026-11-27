@@ -12,21 +12,22 @@ O projeto foi desenhado com uma estética retrô minimalista e responde a comand
 ## Funcionalidades Principais
 
 *   **Reconhecimento de Voz Local (Offline):** Utiliza o modelo Whisper (IA da OpenAI) rodando localmente via Java/Processing, garantindo privacidade e funcionamento sem internet.
-*   **Avatar OLED Animado:** O rosto do robô pisca, move os olhos aleatoriamente e expressa emoções (Feliz, Triste e Raiva).
-*   **Reações Físicas (Sensor Analógico):**
+*   **Avatar OLED Animado:** O rosto do robô pisca e move os olhos aleatoriamente. Ele expressa emoções como Feliz, Triste, Raiva e Amor (Olhos de Coração).
+*   **Reações Físicas (Sensores):**
     *   Fica com Raiva: Se for sacudido bruscamente (detectado pelo acelerômetro).
     *   Fica Triste: Se for virado de cabeça para baixo.
-    *   Fica Feliz: Ao receber um toque (sensor touch).
-*   **Feedback Sonoro:** Emite um "bip" sonoro ao reconhecer um comando de voz válido.
+    *   Fica Apaixonado: Ao receber um toque (detectado pelo sensor touch externo).
+*   **Feedback Sonoro:** Emite um "bip" sonoro no PC ao reconhecer um comando de voz válido.
 *   **Interface Desktop:** Interface retrô colorida (Creme e Laranja) com botões de controle, texto para comandos manuais e seleção de microfone.
-*   **Conectividade:** Comunicação via Serial (USB) e preparado para Bluetooth.
+*   **Conectividade Dupla:** Comunicação via Serial (USB) para o PC e via Bluetooth para controle remoto pelo celular.
 
 ## Tecnologias e Bibliotecas Utilizadas
 
 ### Hardware (ESP32)
 *   **Linguagem:** C++ (Arduino IDE)
 *   **Display:** Adafruit SSD1306 & Adafruit GFX (OLED 128x64 I2C)
-*   **Sensor:** Adafruit ADXL345 (Acelerômetro I2C)
+*   **Sensor de Movimento:** Adafruit ADXL345 (Acelerômetro I2C)
+*   **Sensor de Toque:** Módulo Touch TTP223 (Digital)
 *   **Comunicação:** Serial e BluetoothSerial
 
 ### Software (Interface e IA)
@@ -40,6 +41,7 @@ Para replicar este projeto, você vai precisar de:
 *   1x Placa ESP32 DevKit V1
 *   1x Display OLED 0.96" (SSD1306 I2C)
 *   1x Acelerômetro ADXL345 (I2C)
+*   1x Módulo Sensor de Toque (TTP223)
 *   1x LED (Qualquer cor) + Resistor (220Ω a 330Ω)
 *   Fios Jumper e Protoboard
 
@@ -55,7 +57,9 @@ Para replicar este projeto, você vai precisar de:
 | | SDO | GND |
 | **LED** | Anodo (+) | GPIO 5 |
 | | Catodo (-) | GND (via resistor) |
-| **Touch** | Fio | GPIO 4 |
+| **Sensor Touch** | VCC | 3.3V |
+| | GND | GND |
+| | I/O (SIG) | GPIO 4 |
 
 ## Como Executar o Projeto
 
@@ -70,19 +74,18 @@ Para replicar este projeto, você vai precisar de:
 2. Na pasta do sketch, crie uma pasta chamada `data` e coloque o modelo da IA: `ggml-small-q5_1.bin`.
 3. Crie uma pasta chamada `code` e coloque a biblioteca Java: `whisper-jni.jar`.
 4. Abra o arquivo `.pde` no Processing e clique em Run.
-5. Conecte a ESP32 via USB e clique em CONECTAR ESP.
+5. Conecte a ESP32 via USB e clique em CONECTAR ESP na interface.
 
-## Comandos de Voz Suportados
+## Comandos de Voz e Interações
 
-Basta clicar no botão FALAR na interface, dizer uma das frases abaixo e clicar em PARAR:
-
-| Ação | Frases Aceitas |
+| Ação / Emoção | Como Acionar |
 | :--- | :--- |
-| **Ligar LED** | "Ligar led", "Acender luz", "Ligar a lâmpada" |
-| **Desligar LED** | "Desligar led", "Apagar luz", "Apagar a lâmpada" |
-| **Expressão Feliz** | "Ficar feliz", "Sorrir", "Ficar alegre" |
-| **Expressão Triste** | "Ficar triste" |
-| **Expressão Raiva** | "Ficar bravo", "Ficar com raiva" |
+| **Ligar LED** | Falar: "Ligar led", "Acender luz", "Ligar a lâmpada" |
+| **Desligar LED** | Falar: "Desligar led", "Apagar luz", "Apagar a lâmpada" |
+| **Expressão Feliz** | Falar: "Ficar feliz", "Sorrir", "Ficar alegre" |
+| **Expressão Triste** | Falar: "Ficar triste" |
+| **Expressão Raiva** | Falar: "Ficar bravo", "Ficar com raiva" |
+| **Olhos de Coração** | Tocar no sensor de toque físico |
 
 ## Contexto Acadêmico
 
@@ -93,4 +96,4 @@ Este projeto foi desenvolvido como parte dos requisitos da disciplina de Program
 *   Desenvolvimento Orientado a Objetos.
 
 ---
-Desenvolvido por Henrique A. C.
+Desenvolvido por Henrique R. A.
