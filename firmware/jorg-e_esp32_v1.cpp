@@ -20,6 +20,7 @@ BluetoothSerial SerialBT;
 const uint8_t FELIZ = 0;
 const uint8_t RAIVA = 1;
 const uint8_t TRISTE = 2;
+const uint8_t AMOR = 3; // NOVA EXPRESSÃO
 uint8_t expressao = FELIZ;
 uint32_t fimExpressao = 0;
 const uint16_t DURACAO_EXPRESSAO = 3000;
@@ -35,7 +36,7 @@ const int BOCA_X = 64;
 const int BOCA_Y = 50;
 
 // ===== CONTROLE DE ANIMAÇÃO =====
-const uint16_t INTERVALO_FRAME = 33; // ~30 fps
+const uint16_t INTERVALO_FRAME = 33;
 uint32_t ultimoFrame = 0;
 
 float posX = 0;           
@@ -53,16 +54,15 @@ int ultimoRaioY = -1;
 uint8_t ultimaExpressao = 255;
 
 void setup() {
-  // Inicializa USB (para o Processing) e Bluetooth (para o celular)
   Serial.begin(9600); 
-  SerialBT.begin("JORG-E"); // Nome do dispositivo Bluetooth
+  SerialBT.begin("JORG-E"); 
   
   pinMode(PINO_LED, OUTPUT);
   digitalWrite(PINO_LED, LOW);
+  pinMode(PINO_TOUCH, INPUT);
 
   Wire.begin(21, 22);
   
-  // Inicializa Display
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("Falha no OLED"));
     for(;;);
@@ -70,14 +70,12 @@ void setup() {
   
   telaIntro();
 
-  // Inicializa Acelerômetro
   if (!accel.begin()) {
-    Serial.println("Falha no ADXL345. Verifique as ligacoes.");
+    Serial.println("Falha no ADXL345.");
   } else {
     accel.setRange(ADXL345_RANGE_16_G);
   }
   
-  // Tempos iniciais da animação
   uint32_t agora = millis();
   proximoOlhar = agora + 1500;
   proximaPiscada = agora + 2000;
@@ -95,17 +93,16 @@ void loop() {
     expressao = FELIZ;
   }
 
-  // Controle de FPS da animação
   if (agora - ultimoFrame < INTERVALO_FRAME) return;
   ultimoFrame = agora;
 
   atualizarOlhar(agora);
   atualizarPiscada(agora);
 
+  // Tremor apenas para raiva
   int tremor = (expressao == RAIVA) ? (int)random(-2, 3) : 0;
   int xFinal = (int)round(posX) + tremor;
 
-  // Só atualiza o display se algo mudou (economia de processamento I2C)
   if (xFinal != ultimoX || raioYAtual != ultimoRaioY || expressao != ultimaExpressao) {
     desenharRosto(xFinal, raioYAtual);
     ultimoX = xFinal;
@@ -114,7 +111,6 @@ void loop() {
   }
 }
 
-// ===== TELA DE INTRO =====
 void telaIntro() {
   const char* texto = "JORG-E"; 
   display.setTextSize(3);
@@ -152,6 +148,7 @@ void processarComando(char c, uint32_t agora, bool isBT) {
   if (c == 'R') definirExpressao(RAIVA, agora);
   else if (c == 'T') definirExpressao(TRISTE, agora);
   else if (c == 'F') definirExpressao(FELIZ, agora);
+  else if (c == 'A') definirExpressao(AMOR, agora); // Comando extra para amor
   else if (c == 'L') {
     digitalWrite(PINO_LED, HIGH);
     if(isBT) SerialBT.println("LED_LIGADO");
@@ -179,14 +176,12 @@ void lerAcelerometro(uint32_t agora) {
 
   float forca = sqrt((x*x) + (y*y) + (z*z));
 
-  // Detecta sacudida (Raiva)
   if (forca > 16.0) {
     if (expressao != RAIVA) {
       definirExpressao(RAIVA, agora);
       Serial.println("EVENTO:SACUDIDO");
     }
   }
-  // Detecta se virou de cabeça para baixo (Triste)
   else if (z < -7.5) {
     if (expressao != TRISTE) {
       definirExpressao(TRISTE, agora);
@@ -197,11 +192,11 @@ void lerAcelerometro(uint32_t agora) {
 
 void lerTouch(uint32_t agora) {
   static uint32_t ultimoTouch = 0;
-  if (agora - ultimoTouch < 1000) return; 
+  if (agora - ultimoTouch < 2000) return; // Espera 2s para não bugar
 
-  if (touchRead(PINO_TOUCH) < 20) { 
-    if (expressao != FELIZ) {
-      definirExpressao(FELIZ, agora);
+  if (digitalRead(PINO_TOUCH) == HIGH) { 
+    if (expressao != AMOR) {
+      definirExpressao(AMOR, agora);
       ultimoTouch = agora;
       Serial.println("EVENTO:CARINHO");
     }
@@ -215,9 +210,11 @@ void definirExpressao(uint8_t nova, uint32_t agora) {
 
 // ===== LÓGICA DE ANIMAÇÃO =====
 void atualizarOlhar(uint32_t agora) {
-  if (expressao != FELIZ) {   
+  if (expressao == AMOR) {
+    // No amor, os olhinhos dão uma leve tremida de felicidade
+    alvoX = (millis() % 200 < 100) ? 2 : -2; 
+  } else if (expressao != FELIZ) {   
     alvoX = 0;
-    proximoOlhar = agora + 1000;
   } else if (agora >= proximoOlhar) {
     const int opcoes[] = {-18, 0, 18, 0};
     alvoX = opcoes[random(4)];
@@ -230,6 +227,12 @@ void atualizarOlhar(uint32_t agora) {
 }
 
 void atualizarPiscada(uint32_t agora) {
+  // Se estiver apaixonado, não pisca (os corações ficam fixos)
+  if (expressao == AMOR) {
+    raioYAtual = RAIO_Y_ABERTO;
+    return;
+  }
+
   switch (estadoPiscada) {
     case ABERTO:
       if (agora >= proximaPiscada) estadoPiscada = FECHANDO;
@@ -262,7 +265,7 @@ void fillElipse(int cx, int cy, int rx, int ry) {
 }
 
 void desenharPalpebra(int cx, bool esquerdo, int raioY) {
-  if (expressao == FELIZ || raioY <= RAIO_Y_FECHADO + 2) return; 
+  if (expressao == FELIZ || expressao == AMOR || raioY <= RAIO_Y_FECHADO + 2) return; 
   
   bool descePelaDireita = (expressao == RAIVA) == esquerdo;
   int topo = OLHOS_Y - raioY - 1;
@@ -272,9 +275,21 @@ void desenharPalpebra(int cx, bool esquerdo, int raioY) {
   display.fillTriangle(cx - RAIO_X - 1, topo, cx + RAIO_X + 1, topo, xPonta, topo + queda, SSD1306_BLACK);
 }
 
+void desenharOlhoCoracao(int cx, int cy) {
+  // Desenha dois círculos (parte de cima do coração)
+  display.fillCircle(cx - 5, cy - 5, 7, SSD1306_WHITE);
+  display.fillCircle(cx + 5, cy - 5, 7, SSD1306_WHITE);
+  // Desenha o triângulo (parte de baixo)
+  display.fillTriangle(cx - 11, cy - 2, cx + 11, cy - 2, cx, cy + 14, SSD1306_WHITE);
+  
+  // Faz um furinho preto para dar o efeito de "brilho" no olho
+  display.fillCircle(cx - 7, cy - 7, 2, SSD1306_BLACK);
+}
+
 int curvaBoca(int x) {
   if (expressao == RAIVA)  return (x * x) / 24;
   if (expressao == TRISTE) return (x * x) / 12;
+  if (expressao == AMOR)   return 6 - (x * x) / 10; // Sorriso maior e mais aberto
   return 4 - (x * x) / 16;
 }
 
@@ -289,10 +304,19 @@ void desenharBoca(int offsetX) {
 
 void desenharRosto(int offsetX, int raioY) {
   display.clearDisplay();
-  fillElipse(CENTRO_ESQ_X + offsetX, OLHOS_Y, RAIO_X, raioY);
-  fillElipse(CENTRO_DIR_X + offsetX, OLHOS_Y, RAIO_X, raioY);
-  desenharPalpebra(CENTRO_ESQ_X + offsetX, true, raioY);
-  desenharPalpebra(CENTRO_DIR_X + offsetX, false, raioY);
+  
+  if (expressao == AMOR) {
+    // Se for amor, desenha os corações
+    desenharOlhoCoracao(CENTRO_ESQ_X + offsetX, OLHOS_Y);
+    desenharOlhoCoracao(CENTRO_DIR_X + offsetX, OLHOS_Y);
+  } else {
+    // Se não, desenha os olhos redondos normais
+    fillElipse(CENTRO_ESQ_X + offsetX, OLHOS_Y, RAIO_X, raioY);
+    fillElipse(CENTRO_DIR_X + offsetX, OLHOS_Y, RAIO_X, raioY);
+    desenharPalpebra(CENTRO_ESQ_X + offsetX, true, raioY);
+    desenharPalpebra(CENTRO_DIR_X + offsetX, false, raioY);
+  }
+  
   desenharBoca(offsetX);
   display.display();
 }
